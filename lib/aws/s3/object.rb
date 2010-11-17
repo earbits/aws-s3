@@ -191,7 +191,7 @@ module AWS
         def update(key, bucket = nil, options = {})
           bucket          = bucket_name(bucket)
           source_key      = path!(bucket, key)
-          default_options = {'x-amz-copy-source' => source_key, 'x-amz-metadata-directive' => 'REPLACE'}
+          default_options = {'x-amz-copy-source' => URI.encode(source_key), 'x-amz-metadata-directive' => 'REPLACE'}
           returning put(source_key, options.merge(default_options)) do
             acl(key, bucket, acl(key, bucket))
           end
