@@ -176,6 +176,26 @@ class RemoteS3ObjectTest < Test::Unit::TestCase
     assert_equal object.value, copy.value
     assert_equal object.content_type, copy.content_type
     
+    # Test copy to an filename with an accent
+    copy_to_accent = nil
+    assert_nothing_raised do
+      object.copy('testing_s3objects-copy-to-accent-é')
+      copy_to_accent = S3Object.find('testing_s3objects-copy-to-accent-é', TEST_BUCKET)
+      assert        copy_to_accent
+      assert_equal  copy_to_accent.value,         object.value
+      assert_equal  copy_to_accent.content_type,  object.content_type
+    end
+    
+    # Test copy from an filename with an accent
+    assert_nothing_raised do
+      object_with_accent = S3Object.find('testing_s3objects-copy-to-accent-é')
+      object_with_accent.copy('testing_s3objects-copy-from-accent')
+      copy_from_accent = S3Object.find('testing_s3objects-copy-from-accent', TEST_BUCKET)
+      assert        copy_from_accent
+      assert_equal  copy_from_accent.value,         object_with_accent.value
+      assert_equal  copy_from_accent.content_type,  object_with_accent.content_type
+    end    
+    
     # Delete object
     
     assert_nothing_raised do
@@ -365,6 +385,40 @@ class RemoteS3ObjectTest < Test::Unit::TestCase
   
   def test_updating_an_object_should_replace_its_metadata
     key = 'updated-object'
+
+    S3Object.store(key, 'value does not matter', TEST_BUCKET)
+    object = S3Object.find(key, TEST_BUCKET)
+
+    object.content_type = 'foo/bar'
+    object.metadata[:foo] = 'bar'
+    object.update
+
+    reloaded_object = S3Object.find(key, TEST_BUCKET)
+    assert_equal 'foo/bar', reloaded_object.content_type
+    assert_equal 'bar', reloaded_object.metadata[:foo]
+  ensure
+    S3Object.delete(key, TEST_BUCKET)
+  end
+
+  def test_updating_an_object_with_unicode_name
+    key = 'ʇɔǝɾqo-pǝʇɐpdn'
+
+    S3Object.store(key, 'value does not matter', TEST_BUCKET)
+    object = S3Object.find(key, TEST_BUCKET)
+
+    object.content_type = 'foo/bar'
+    object.metadata[:foo] = 'bar'
+    object.update
+
+    reloaded_object = S3Object.find(key, TEST_BUCKET)
+    assert_equal 'foo/bar', reloaded_object.content_type
+    assert_equal 'bar', reloaded_object.metadata[:foo]
+  ensure
+    S3Object.delete(key, TEST_BUCKET)
+  end
+
+  def test_updating_an_object_with_plus_in_name
+    key = 'update+object'
 
     S3Object.store(key, 'value does not matter', TEST_BUCKET)
     object = S3Object.find(key, TEST_BUCKET)

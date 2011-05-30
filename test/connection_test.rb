@@ -119,6 +119,10 @@ class ConnectionTest < Test::Unit::TestCase
     assert_equal 'single%27quotes%27', Connection.prepare_path(%(single'quotes'))
   end
 
+  def test_prepare_path_should_escape_plus
+    assert_equal 'pl%2bus', Connection.prepare_path('pl+us')
+  end
+
   def test_request_only_escapes_the_path_the_first_time_it_runs_and_not_subsequent_times
     connection     = Connection.new(@keys)
     unescaped_path = 'path with spaces'
