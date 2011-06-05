@@ -10,7 +10,10 @@ module AWS
           path = path.remove_extended unless path.valid_utf8?
 
           # Escape square brackets and single quotes
-          URI.escape(path).gsub(/[\[\]']/) { |m| "%%%02x" % m[0] }
+          URI.escape(path).gsub(/[+\[\]']/) do |m|
+            value = m.respond_to?(:ord) ? m.ord : m[0]
+            "%%%02x" % value
+          end
         end
       end
       
@@ -65,7 +68,7 @@ module AWS
         path         = self.class.prepare_path(path)
         request      = request_method(:get).new(path, {})
         query_string = query_string_authentication(request, options)
-        returning "#{protocol(options)}#{http.address}#{port_string}#{path}" do |url|
+        "#{protocol(options)}#{http.address}#{port_string}#{path}".tap do |url|
           url << "?#{query_string}" if authenticate
         end
       end
